@@ -1,50 +1,132 @@
-# PMS KM. M.H. Thamrin — Versi GitHub Pages (DEMO)
+# PMS KM. MH. Thamrin
 
-Aplikasi web statis untuk uji coba **Planned Maintenance System Departemen Mesin KM. M.H. Thamrin**. Menggunakan **14 mesin/peralatan dan 194 item perawatan** dari `prisma/seed-data.ts` yang disimpan dalam proyek asal di Google Drive.
+Plan Maintenance System (PMS) Departemen Mesin: daftar tugas perawatan **per mesin**, running hours harian,
+penugasan berjenjang sesuai pangkat kapal, approval, dan laporan PDF/CSV.
 
-> ⚠️ **Bukan pengganti PMS operasional kapal.** Tidak ada autentikasi, pembatasan hak akses, persetujuan perwira yang terverifikasi, sinkronisasi antar pengguna, maupun database server. Semua data demo ada pada `localStorage` browser masing-masing. Data bisa hilang ketika cache/data situs dihapus. Jangan memasukkan data rahasia atau bergantung pada demo untuk pengendalian keselamatan.
+Stack: Next.js 15 (App Router, Server Actions) · Tailwind CSS · Prisma · SQLite · sesi JWT (cookie httpOnly) ·
+pdfkit (laporan PDF) · font Plus Jakarta Sans (paket lokal, tanpa CDN).
 
-## Cara menerbitkan di GitHub Pages
+## Menjalankan
 
-**Alamat yang diharapkan setelah penerbitan:** `https://raidahqodriah.github.io/pms-km-mh-thamrin/`
+```bash
+npm install
+cp .env.example .env      # lalu ganti SESSION_SECRET
+npm run setup             # prisma generate + db push + seed
+npm run dev               # http://localhost:3000
+```
 
-1. Masuk ke GitHub dengan akun **raidahqodriah**.
-2. Klik **New repository**, beri nama **`pms-km-mh-thamrin`**, pilih **Public**, lalu **Create repository**.
-3. Pilih **Add file → Upload files**, lalu unggah **semua file yang ada di dalam folder ini** ke root repository (jangan unggah file ZIP sebagai satu file). Berkas utamanya adalah `index.html`, `styles.css`, `app.js`, `data.js`, dan `.nojekyll`.
-4. Klik **Commit changes**.
-5. Masuk **Settings → Pages → Build and deployment → Deploy from a branch → Branch: main → /(root) → Save**.
-6. Setelah GitHub menyatakan berhasil menerbitkan situs, buka alamat GitHub Pages di atas. Jika muncul 404, periksa bahwa file `index.html` berada di root repo, bukan di subfolder.
+Produksi: `npm run build && npm start`. Reset database (hapus semua data): `npm run db:reset`.
+Hentikan server dev/produksi sebelum `prisma generate`/`build` (Windows mengunci file engine Prisma).
 
-**Alternatif:** Jika pengguna sudah punya repository, boleh unggah berkas ke repository itu lalu aktifkan Pages dari root atau subfolder yang berisi `index.html` (URL akan mengikuti nama repository tersebut).
+### Akun awal (dari seeder) — ganti lewat menu Akun / Password
 
-## Menjalankan tanpa hosting
+| Username | Password | Pangkat | Hak akses |
+|---|---|---|---|
+| `masinis` | `masinis123` | C/E (KKM) | Administrator |
+| `masinis1`, `masinis2`, `masinis3` | `perwira123` | 1/E, 2/E, 3/E | Supervisor |
+| `mekanik1` | `krew123` | FTR | Crew |
+| `oiler1`, `oiler2` | `krew123` | OLR | Crew |
 
-Buka `index.html` menggunakan browser biasa setelah mengekstrak ZIP. Tidak ada instalasi Node.js atau server. Aplikasi tidak menggunakan CDN.
+## Daftar Mesin
 
-## Fitur demo
+Sumber data: *Plan Maintenance System – Engine Departement* (F-TECH-01-xx-02-R00). 14 mesin/peralatan, 194 pekerjaan:
+Main Engine, Auxiliary Engine, Gearbox, Fuel Purifier, Steering Gear, Anchor Gear, 5 pompa (GS, Bilge, Pemadam
+Kebakaran, OWS, Fresh Water), Pipa-pipa, Kelistrikan, House Keeping. Tiap pekerjaan = **Obyek**, **Uraian pekerjaan**,
+**Keterangan**, **PIC**, dan **interval**.
 
-- Dashboard: total mesin, item pekerjaan, terlambat, menunggu approval, ringkasan status.
-- Daftar mesin: 14 mesin/peralatan, pencarian, interval waktu atau jam operasi dan detail 194 pekerjaan.
-- Editing metadata mesin: nama, merk/tipe, lokasi, serial, nilai hour meter awal.
-- Atur PIC per pekerjaan (Semua crew atau beberapa pangkat).
-- Set tanggal/RH perawatan terakhir untuk mengaktifkan perhitungan jatuh tempo.
-- Running hours: pencatatan harian 0–24 jam, total RH = HM awal + total catatan harian. Gearbox mengikuti RH Main Engine.
-- Tugas: penugasan manual, pengajuan selesai, approval **simulasi**; approval mengubah acuan jadwal.
-- Laporan/riwayat: ekspor CSV master dan tugas.
-- Cadangan: ekspor/impor JSON untuk memindahkan data secara manual, atau reset.
+> Merk/tipe/lokasi mesin (mis. Caterpillar C18, Weichai 226B) berasal dari file sumber; sesuaikan lewat *Edit Mesin*
+> bila kapal berbeda. HM terakhir & tanggal perawatan pada file sumber **tidak** disalin — isi sendiri.
 
-## Berbeda dari source Next.js asli
+- **PIC** bisa **Semua crew** atau satu/lebih pangkat (mis. 1/E + OLR). Difilter di Daftar Mesin.
+- **Interval dua indikator** — tiap pekerjaan boleh memakai:
+  - *interval waktu* (tiap N hari / minggu / bulan), dan/atau
+  - *maksimum running hours* (mis. 250 RH, 750 RH, 3.000 RH).
+  
+  Bila keduanya diisi, perawatan jatuh tempo pada indikator yang **tercapai lebih dulu** (mis. Oil sampling: 1.500 RH atau 6 bulan).
+- Jatuh tempo dihitung dari perawatan terakhir yang disetujui (tanggal **dan** running hours mesin saat itu) atau dari
+  isian manual "terakhir dikerjakan". Filter: *Perlu dikerjakan / Terlambat / Aman / Belum ada acuan*.
+- Administrator dapat menambah/mengubah/menghapus mesin dan item (yang sudah punya riwayat hanya diarsipkan).
 
-Source asli berbasis Next.js + Prisma + SQLite dan berjalan melalui Cloudflare Tunnel. **Versi ini adalah implementasi demo statis yang terpisah**, bukan hasil deployment langsung dari aplikasi Next.js. GitHub Pages tidak dapat menjalankan backend Next.js server actions, SQLite, login JWT, atau pengunggahan bukti foto seperti source asli.
+## Running Hours
 
-Untuk aplikasi nyata yang dapat dipakai bersama KKM, masinis dan crew, disarankan backend ter-hosting dan database PostgreSQL, autentikasi role-based yang terverifikasi, audit log, serta penyimpanan bukti pekerjaan. Penggunaan harus diuji dan disetujui sebelum dipakai dalam operasi kapal.
+Menu **Running Hours** (semua user): catat jam operasi mesin per hari (0–24 jam) lewat kalender bulanan.
+- Total RH = *running hours awal* mesin (diisi di Edit Mesin) + jumlah catatan harian. Kartu ringkasan: total RH,
+  jam bulan ini, rata-rata 30 hari (untuk perkiraan "±N hari lagi"), catatan terakhir.
+- Mesin bisa mengikuti RH mesin lain (Gearbox mengikuti Main Engine).
+- Crew boleh mencatat/mengubah 7 hari terakhir; perwira semua tanggal. Perwira dapat **kalibrasi jam meter** (menyamakan
+  total dengan hour meter fisik) dan menghapus catatan.
+- Dashboard & Tugas Saya menampilkan pengingat bila RH hari ini belum dicatat.
+- Saat tugas disetujui, RH mesin pada tanggal tugas disimpan sebagai acuan interval berikutnya.
 
-## File
+## Hierarki & hak akses
 
-- `index.html`: kerangka halaman aplikasi.
-- `styles.css`: desain responsif.
-- `app.js`: logika UI dan pencatatan data lokal.
-- `data.js`: data referensi 14 mesin / 194 pekerjaan dari source asli (tanpa data operasional atau password).
-- `.nojekyll`: mendukung publikasi sebagai berkas statis langsung.
+Setiap akun punya **pangkat** (tabel `Rank`, dapat diubah di *Pangkat & Role*) yang menentukan **level**
+(1 = tertinggi) dan **hak akses** (`ADMIN` / `SUPERVISOR` / `CREW`).
 
-Tidak memasukkan `.env`, akun/password seeder, `dev.db`, folder `node_modules`, `.next`, atau data operasional kapal.
+| | Administrator (Nakhoda, KKM) | Supervisor (perwira) | Crew (rating) |
+|---|---|---|---|
+| Lihat Daftar Mesin | ✔ | ✔ | – |
+| Edit mesin & item | ✔ | – | – |
+| Kelola akun & pangkat | ✔ | – | – |
+| Tugaskan / Approve | ✔ | ✔ | – |
+| Tarik data (PDF/CSV) | ✔ | ✔ | – |
+| Kalibrasi RH, hapus catatan RH | ✔ | ✔ | – |
+| Catat running hours | ✔ | ✔ | ✔ |
+| Kerjakan & ajukan tugas sendiri | ✔ | ✔ | ✔ |
+
+Menugaskan dan meng-approve **hanya untuk pangkat dengan level lebih besar** dari user; approve dilakukan atas pangkat
+orang yang mengerjakan. Sistem menolak tindakan yang membuat tidak ada Administrator aktif. Ubah kebijakan di
+`src/lib/permissions.ts`.
+
+## Tugas bersama
+
+Satu pekerjaan dapat ditugaskan ke beberapa petugas; begitu salah satu mengajukan selesai, tugas tertanda selesai untuk
+semua. Menugaskan item yang sama pada tanggal yang sama menambah petugas ke tugas yang ada.
+
+## Tarik Data
+
+Rentang tanggal + filter mesin/petugas/status → **PDF** (ringkasan, progres per mesin, rincian, tanda tangan,
+lampiran foto opsional) atau **CSV** (22 kolom, termasuk RH saat selesai).
+
+## Akses lewat internet (Cloudflare Tunnel)
+
+Aplikasi berjalan di komputer ini (SQLite + folder foto), dibuka ke internet lewat tunnel — tanpa membuka port router.
+
+**Cepat (tanpa akun):** klik dua kali `scripts\start-public.cmd`. Alamat `https://xxxx.trycloudflare.com` muncul di
+jendela "PMS Tunnel"; alamat **berubah** tiap tunnel dinyalakan ulang dan hanya aktif selama komputer, server, dan tunnel menyala.
+
+**Alamat tetap (butuh akun Cloudflare + domain):**
+
+```bash
+cloudflared tunnel login
+cloudflared tunnel create pms
+cloudflared tunnel route dns pms pms.domainanda.com
+# ~/.cloudflared/config.yml:  tunnel: pms / credentials-file: ... / ingress: [{hostname: pms.domainanda.com, service: http://localhost:3000}, {service: http_status:404}]
+cloudflared service install      # jalan otomatis saat Windows menyala
+```
+
+Tambahkan domain ke `allowedOrigins` di `next.config.mjs` lalu build ulang.
+
+**Wajib sebelum dibuka ke publik:** `COOKIE_SECURE="true"` dan `SESSION_SECRET` acak panjang di `.env`; **ganti semua
+password bawaan seeder**; login dibatasi (6 gagal/username atau 20/IP per 15 menit); cadangkan `prisma/dev.db` dan `uploads/`.
+
+## Struktur
+
+```
+prisma/schema.prisma        Rank, User, Equipment, MaintenanceItem, RunningHourLog, Task, TaskAssignee
+prisma/seed-data.ts         daftar mesin + pekerjaan dari PDF, daftar pangkat
+prisma/seed.ts              seeder idempotent (tidak menimpa perubahan; memindahkan item buatan pengguna)
+src/lib/interval.ts         label interval & jatuh tempo (waktu dan/atau RH)
+src/lib/hours.ts            statistik & total running hours
+src/lib/permissions.ts      matriks izin + level hierarki
+src/lib/export.ts, pdf-report.ts   laporan CSV / PDF
+src/app/supervisor/*        perwira: ringkasan, Daftar Mesin (master), tugas, export, akun, pangkat
+src/app/hours               Running Hours (semua user)
+src/app/crew, /account      area crew, ganti password
+```
+
+## Catatan
+
+- Penjadwalan otomatis (membuat tugas sendiri saat jatuh tempo) belum ada; atasan menugaskan manual, dibantu status jatuh tempo.
+- "Hari ini" mengikuti `APP_TIMEZONE` (default `Asia/Jakarta`).
+- Foto dikompres di browser dan disimpan di `UPLOAD_DIR`, bukan `public/`. Untuk PostgreSQL: ubah `provider` di `schema.prisma`.
