@@ -1,132 +1,88 @@
-# PMS KM. MH. Thamrin
+# PMS KM. M.H. Thamrin — Operasional Multiuser (Kandidat Uji)
 
-Plan Maintenance System (PMS) Departemen Mesin: daftar tugas perawatan **per mesin**, running hours harian,
-penugasan berjenjang sesuai pangkat kapal, approval, dan laporan PDF/CSV.
+Aplikasi PMS berbasis browser untuk Departemen Mesin KM. M.H. Thamrin. Source ini menggantikan versi **DEMO localStorage**. Data operasional berada di **PostgreSQL Supabase**, akses dibatasi **Row Level Security (RLS)**, sementara halaman aplikasi dipublikasikan lewat **GitHub Pages**.
 
-Stack: Next.js 15 (App Router, Server Actions) · Tailwind CSS · Prisma · SQLite · sesi JWT (cookie httpOnly) ·
-pdfkit (laporan PDF) · font Plus Jakarta Sans (paket lokal, tanpa CDN).
+> **PENTING:** Belum tersambung ke proyek Supabase milikmu dan **belum diuji end-to-end pada database produksi**. Jangan gunakan sebagai sistem catatan keselamatan resmi sampai diuji bersama KKM, termasuk validasi jam operasi, interval PMS, hierarki PIC, hasil persetujuan, cadangan data, dan prosedur ketika internet kapal terputus.
 
-## Menjalankan
+## Yang tersedia
 
-```bash
-npm install
-cp .env.example .env      # lalu ganti SESSION_SECRET
-npm run setup             # prisma generate + db push + seed
-npm run dev               # http://localhost:3000
-```
+- **14 mesin/peralatan dan 194 item perawatan**, dari master data source PMS Google Drive yang dibahas sebelumnya. Tidak menyalin hour meter historis, data operasional, serial number, atau password.
+- **Email/password login** via Supabase Auth; akun baru dibuat **nonaktif**, lalu diaktifkan administrator setelah verifikasi.
+- **Role & pangkat:** ADMIN (Nakhoda/KKM), SUPERVISOR (perwira), CREW (pelaksana); pembatasan hak akses diberlakukan di sisi database melalui RPC dan RLS, bukan hanya tombol UI.
+- **Data bersama** running hours, master mesin, interval perawatan, penugasan, laporan realisasi, persetujuan, koreksi, bukti foto/PDF privat, dan audit log.
+- **Penjadwalan kalender / running hours**; status jatuh tempo tetap **Belum ada acuan** sampai data dasar divalidasi.
+- **Approval berjenjang:** atasan yang berpangkat lebih tinggi dapat memeriksa, menyetujui atau mengembalikan laporan; tidak dapat menyetujui pekerjaan sendiri.
+- Laporan CSV data pekerjaan, tugas, dan audit (sesuai hak akses).
 
-Produksi: `npm run build && npm start`. Reset database (hapus semua data): `npm run db:reset`.
-Hentikan server dev/produksi sebelum `prisma generate`/`build` (Windows mengunci file engine Prisma).
+## Cara mengganti isi repository GitHub yang SUDAH ADA
 
-### Akun awal (dari seeder) — ganti lewat menu Akun / Password
+Repository: **https://github.com/raidahqodriah/pms-km-mh-thamrin**
 
-| Username | Password | Pangkat | Hak akses |
-|---|---|---|---|
-| `masinis` | `masinis123` | C/E (KKM) | Administrator |
-| `masinis1`, `masinis2`, `masinis3` | `perwira123` | 1/E, 2/E, 3/E | Supervisor |
-| `mekanik1` | `krew123` | FTR | Crew |
-| `oiler1`, `oiler2` | `krew123` | OLR | Crew |
+1. Ekstrak ZIP ini, buka folder hasil ekstraksi **PMS-MH-Thamrin-Operasional**.
+2. Buka repository GitHub → tab **Code** → **Add file** → **Upload files**.
+3. Unggah isi folder hasil ekstraksi (bukan folder luarnya) sehingga file `index.html`, `app.js`, `config.js`, `styles.css` ada langsung di **root repository**. Sertakan folder `database` yang berisi kedua file SQL.
+4. **Commit changes**. Saat file lama bernama sama, GitHub akan menggantinya dengan versi baru pada branch `main`.
+5. Di tab Code, hapus file `data.js` dari versi demo karena tidak digunakan lagi. Jika ada folder lama bernama `pms-km-mh-thamrin-github-pages`, sebaiknya hapus setelah memverifikasi file di root.
+6. Pastikan **Settings → Pages → Build and deployment** masih `Deploy from a branch`, `main`, `/(root)`.
+7. Setelah penerbitan, alamat tetap: **https://raidahqodriah.github.io/pms-km-mh-thamrin/**. Sebelum Supabase siap, halaman akan menjelaskan bahwa backend belum dikonfigurasi.
 
-## Daftar Mesin
+> Jika file `index.html` lama masih tampak setelah upload, lakukan hard refresh (`Ctrl+Shift+R`) atau tunggu GitHub Pages menerbitkan commit terbaru.
 
-Sumber data: *Plan Maintenance System – Engine Departement* (F-TECH-01-xx-02-R00). 14 mesin/peralatan, 194 pekerjaan:
-Main Engine, Auxiliary Engine, Gearbox, Fuel Purifier, Steering Gear, Anchor Gear, 5 pompa (GS, Bilge, Pemadam
-Kebakaran, OWS, Fresh Water), Pipa-pipa, Kelistrikan, House Keeping. Tiap pekerjaan = **Obyek**, **Uraian pekerjaan**,
-**Keterangan**, **PIC**, dan **interval**.
+## Hubungkan ke Supabase (wajib agar multiuser benar-benar bekerja)
 
-> Merk/tipe/lokasi mesin (mis. Caterpillar C18, Weichai 226B) berasal dari file sumber; sesuaikan lewat *Edit Mesin*
-> bila kapal berbeda. HM terakhir & tanggal perawatan pada file sumber **tidak** disalin — isi sendiri.
+1. Di **https://supabase.com/dashboard**, buat **New project**. Pilih wilayah server yang mendekati penggunaan operasional, catat database password secara privat dan jangan bagikan kepada orang lain.
+2. Buka **SQL Editor** → **New query**, tempel isi `database/schema.sql`, kemudian klik **Run**. Pastikan tidak ada kesalahan. SQL mengaktifkan RLS, hak akses RPC, profil pengguna, dan bucket dokumen privat.
+3. Buka query baru, tempel isi `database/seed.sql` → **Run**. Hasil: 14 mesin, 194 item pekerjaan, daftar jabatan. **Cek hasil** (SQL Editor):
+   ```sql
+   select count(*) as mesin from public.equipment;        -- 14
+   select count(*) as pekerjaan from public.maintenance_items; -- 194
+   ```
+4. Buka **Project Settings → API** (atau **Connect → API keys**, tergantung tampilan dashboard). Catat **Project URL** (`https://...supabase.co`) dan **publishable key** (`sb_publishable_...`) atau **legacy anon key**. Keduanya boleh digunakan untuk browser dengan RLS yang benar. **JANGAN gunakan `service_role` atau secret key.**
+5. Edit `config.js` yang ada di GitHub → klik ikon pensil:
+   ```js
+   window.PMS_CONFIG = {
+     url: 'https://NAMA-PROYEK.supabase.co',
+     anonKey: 'PUBLISHABLE_ATAU_ANON_KEY'
+   };
+   ```
+   Klik **Commit changes**, tunggu GitHub Pages menerbitkan ulang.
+6. Di Supabase **Authentication → URL Configuration**, tetapkan **Site URL** `https://raidahqodriah.github.io/pms-km-mh-thamrin/`. Di **Redirect URLs**, tambahkan alamat yang sama (dan opsi wildcard yang relevan). Buka **Authentication → Providers → Email** dan sesuaikan kebijakan pendaftaran/konfirmasi email; untuk kapal, dianjurkan undangan personel yang diverifikasi, bukan pendaftaran terbuka selamanya.
+7. Daftarkan **akun KKM yang benar-benar ditunjuk sebagai administrator** lewat halaman aplikasi atau undang melalui Supabase Authentication. Jika aktivasi email dinyalakan, pastikan email dikonfirmasi terlebih dahulu. **Hanya untuk bootstrap pertama**, gunakan SQL Editor Supabase, ganti email pada perintah berikut dengan email admin yang terdaftar:
+   ```sql
+   update public.profiles
+      set rank_code = 'C/E', active = true, full_name = 'Nama Kepala Kamar Mesin'
+    where id = (select id from auth.users where email = 'email-kkm@example.com');
+   ```
+   Perintah ini ditujukan untuk **KKM yang telah diverifikasi**, bukan akun uji tanpa otorisasi. Setelahnya, login sebagai KKM → **Manajemen Crew** → aktifkan akun lainnya sesuai jabatan.
+8. **Uji dengan setidaknya tiga akun berbeda:** KKM (Admin), Masinis (Supervisor), dan Crew. Periksa bahwa crew tidak bisa mengubah data master, persetujuan hanya dapat dilakukan atasan, dan perubahan terlihat setelah klik **Sinkronkan** di perangkat lain.
 
-- **PIC** bisa **Semua crew** atau satu/lebih pangkat (mis. 1/E + OLR). Difilter di Daftar Mesin.
-- **Interval dua indikator** — tiap pekerjaan boleh memakai:
-  - *interval waktu* (tiap N hari / minggu / bulan), dan/atau
-  - *maksimum running hours* (mis. 250 RH, 750 RH, 3.000 RH).
-  
-  Bila keduanya diisi, perawatan jatuh tempo pada indikator yang **tercapai lebih dulu** (mis. Oil sampling: 1.500 RH atau 6 bulan).
-- Jatuh tempo dihitung dari perawatan terakhir yang disetujui (tanggal **dan** running hours mesin saat itu) atau dari
-  isian manual "terakhir dikerjakan". Filter: *Perlu dikerjakan / Terlambat / Aman / Belum ada acuan*.
-- Administrator dapat menambah/mengubah/menghapus mesin dan item (yang sudah punya riwayat hanya diarsipkan).
+## Perhatian keamanan & kesiapan operasional
 
-## Running Hours
+- Database Supabase dan URL GitHub Pages tidak saling mengubah sendiri; situs frontend dan database harus dipasang terpisah.
+- `config.js` berisi **publishable/anon key**, **BUKAN** rahasia database. Keamanan bergantung pada RLS dan fungsi SQL. **Jangan commit password, `service_role`, kunci rahasia, ataupun file `.env`.**
+- Paket SQL disediakan sebagai **instalasi baru**. Jangan langsung jalankan di proyek Supabase yang sudah memiliki data lain tanpa membuat backup dan review migrasi.
+- **Tanpa internet** browser tidak dapat membaca/menyimpan data baru. Sebelum digunakan di kapal, pastikan prosedur fallback offline, rekonsiliasi data, dan backup terjadwal. Ini belum aplikasi offline-first.
+- Hasil approval dan status jatuh tempo bergantung pada kualitas HM awal, tanggal perawatan terakhir, dan konfigurasi interval. Validasi dengan catatan kapal.
+- Bukti foto/PDF masuk **bucket privat**. Jangan menyimpan foto dokumen pribadi atau informasi sensitif tanpa SOP retensi dan hak akses.
+- Jangan anggap uji awal di browser sebagai validasi kualitas perangkat lunak untuk keselamatan pelayaran.
 
-Menu **Running Hours** (semua user): catat jam operasi mesin per hari (0–24 jam) lewat kalender bulanan.
-- Total RH = *running hours awal* mesin (diisi di Edit Mesin) + jumlah catatan harian. Kartu ringkasan: total RH,
-  jam bulan ini, rata-rata 30 hari (untuk perkiraan "±N hari lagi"), catatan terakhir.
-- Mesin bisa mengikuti RH mesin lain (Gearbox mengikuti Main Engine).
-- Crew boleh mencatat/mengubah 7 hari terakhir; perwira semua tanggal. Perwira dapat **kalibrasi jam meter** (menyamakan
-  total dengan hour meter fisik) dan menghapus catatan.
-- Dashboard & Tugas Saya menampilkan pengingat bila RH hari ini belum dicatat.
-- Saat tugas disetujui, RH mesin pada tanggal tugas disimpan sebagai acuan interval berikutnya.
+## Isi paket
 
-## Hierarki & hak akses
+- `index.html` — kerangka aplikasi.
+- `styles.css` — tampilan desktop/mobile.
+- `app.js` — autentikasi, dashboard, perawatan, jam operasi, tugas, approval, ekspor.
+- `config.js` — lokasi pengisian Project URL dan publishable key.
+- `database/schema.sql` — skema PostgreSQL, RLS, fungsi RPC, bucket bukti.
+- `database/seed.sql` — data referensi 14 mesin, 194 pekerjaan, dan pangkat.
+- `.nojekyll` — penerbitan GitHub Pages.
 
-Setiap akun punya **pangkat** (tabel `Rank`, dapat diubah di *Pangkat & Role*) yang menentukan **level**
-(1 = tertinggi) dan **hak akses** (`ADMIN` / `SUPERVISOR` / `CREW`).
+## Alur keputusan sistem
 
-| | Administrator (Nakhoda, KKM) | Supervisor (perwira) | Crew (rating) |
-|---|---|---|---|
-| Lihat Daftar Mesin | ✔ | ✔ | – |
-| Edit mesin & item | ✔ | – | – |
-| Kelola akun & pangkat | ✔ | – | – |
-| Tugaskan / Approve | ✔ | ✔ | – |
-| Tarik data (PDF/CSV) | ✔ | ✔ | – |
-| Kalibrasi RH, hapus catatan RH | ✔ | ✔ | – |
-| Catat running hours | ✔ | ✔ | ✔ |
-| Kerjakan & ajukan tugas sendiri | ✔ | ✔ | ✔ |
+| Pengguna | Dapat melakukan |
+|---|---|
+| ADMIN (Nakhoda/KKM) | Kelola akun, data master, kalibrasi HM & interval, catat/koreksi RH, tugas dan approval sesuai hierarki |
+| SUPERVISOR (Masinis/Perwira) | Mencatat/koreksi RH, memberi tugas ke bawahan, menyetujui/menolak/batalkan tugas sesuai hierarki |
+| CREW (Kadet/Oiler/Fitter dll.) | Mencatat RH baru, melihat daftar mesin, mengajukan pekerjaan ditugaskan, melihat riwayat sendiri |
+| Akun belum aktif | Melihat status menunggu aktivasi saja |
 
-Menugaskan dan meng-approve **hanya untuk pangkat dengan level lebih besar** dari user; approve dilakukan atas pangkat
-orang yang mengerjakan. Sistem menolak tindakan yang membuat tidak ada Administrator aktif. Ubah kebijakan di
-`src/lib/permissions.ts`.
-
-## Tugas bersama
-
-Satu pekerjaan dapat ditugaskan ke beberapa petugas; begitu salah satu mengajukan selesai, tugas tertanda selesai untuk
-semua. Menugaskan item yang sama pada tanggal yang sama menambah petugas ke tugas yang ada.
-
-## Tarik Data
-
-Rentang tanggal + filter mesin/petugas/status → **PDF** (ringkasan, progres per mesin, rincian, tanda tangan,
-lampiran foto opsional) atau **CSV** (22 kolom, termasuk RH saat selesai).
-
-## Akses lewat internet (Cloudflare Tunnel)
-
-Aplikasi berjalan di komputer ini (SQLite + folder foto), dibuka ke internet lewat tunnel — tanpa membuka port router.
-
-**Cepat (tanpa akun):** klik dua kali `scripts\start-public.cmd`. Alamat `https://xxxx.trycloudflare.com` muncul di
-jendela "PMS Tunnel"; alamat **berubah** tiap tunnel dinyalakan ulang dan hanya aktif selama komputer, server, dan tunnel menyala.
-
-**Alamat tetap (butuh akun Cloudflare + domain):**
-
-```bash
-cloudflared tunnel login
-cloudflared tunnel create pms
-cloudflared tunnel route dns pms pms.domainanda.com
-# ~/.cloudflared/config.yml:  tunnel: pms / credentials-file: ... / ingress: [{hostname: pms.domainanda.com, service: http://localhost:3000}, {service: http_status:404}]
-cloudflared service install      # jalan otomatis saat Windows menyala
-```
-
-Tambahkan domain ke `allowedOrigins` di `next.config.mjs` lalu build ulang.
-
-**Wajib sebelum dibuka ke publik:** `COOKIE_SECURE="true"` dan `SESSION_SECRET` acak panjang di `.env`; **ganti semua
-password bawaan seeder**; login dibatasi (6 gagal/username atau 20/IP per 15 menit); cadangkan `prisma/dev.db` dan `uploads/`.
-
-## Struktur
-
-```
-prisma/schema.prisma        Rank, User, Equipment, MaintenanceItem, RunningHourLog, Task, TaskAssignee
-prisma/seed-data.ts         daftar mesin + pekerjaan dari PDF, daftar pangkat
-prisma/seed.ts              seeder idempotent (tidak menimpa perubahan; memindahkan item buatan pengguna)
-src/lib/interval.ts         label interval & jatuh tempo (waktu dan/atau RH)
-src/lib/hours.ts            statistik & total running hours
-src/lib/permissions.ts      matriks izin + level hierarki
-src/lib/export.ts, pdf-report.ts   laporan CSV / PDF
-src/app/supervisor/*        perwira: ringkasan, Daftar Mesin (master), tugas, export, akun, pangkat
-src/app/hours               Running Hours (semua user)
-src/app/crew, /account      area crew, ganti password
-```
-
-## Catatan
-
-- Penjadwalan otomatis (membuat tugas sendiri saat jatuh tempo) belum ada; atasan menugaskan manual, dibantu status jatuh tempo.
-- "Hari ini" mengikuti `APP_TIMEZONE` (default `Asia/Jakarta`).
-- Foto dikompres di browser dan disimpan di `UPLOAD_DIR`, bukan `public/`. Untuk PostgreSQL: ubah `provider` di `schema.prisma`.
+**Akses final** ditentukan oleh aturan SQL di Supabase; bukan oleh label yang ditampilkan pada tombol.

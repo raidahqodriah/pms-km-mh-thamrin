@@ -1,12 +1,9 @@
-node_modules
-.next
-out
-next-env.d.ts
-*.tsbuildinfo
-
-# env, database, uploaded evidence photos
 .env
-.env.local
-prisma/*.db
-prisma/*.db-journal
-uploads/
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+node_modules/
+.next/
+.DS_Store

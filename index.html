@@ -1,41 +1,17 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0b1830" />
-  <meta name="description" content="PMS KM. M.H. Thamrin — demo manajemen perawatan departemen mesin, berjalan lokal di browser." />
-  <title>PMS | KM. M.H. Thamrin</title>
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1830">
+<meta name="description" content="PMS KM. M.H. Thamrin — Departemen Mesin, pemeliharaan kapal dengan database bersama dan persetujuan berjenjang.">
+<title>PMS KM. M.H. Thamrin — Departemen Mesin</title>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <span class="brand-icon">⚓</span>
-        <div><strong>PMS <span>THAMRIN</span></strong><small>ENGINE DEPARTMENT</small></div>
-      </div>
-      <div class="vessel-chip"><span class="online-dot"></span> KM. M.H. THAMRIN <span class="vessel-tag">DEMO</span></div>
-      <div class="menu-label">MENU UTAMA</div>
-      <nav aria-label="Navigasi utama">
-        <button class="nav-link active" data-page="dashboard"><span>▦</span> Dashboard</button>
-        <button class="nav-link" data-page="equipment"><span>⚙</span> Daftar Mesin</button>
-        <button class="nav-link" data-page="hours"><span>◷</span> Running Hours</button>
-        <button class="nav-link" data-page="tasks"><span>☑</span> Tugas Perawatan</button>
-        <button class="nav-link" data-page="reports"><span>▤</span> Laporan & Riwayat</button>
-      </nav>
-      <div class="menu-label second">PENGELOLAAN</div>
-      <nav><button class="nav-link" data-page="backup"><span>↥</span> Cadangan Data</button></nav>
-      <div class="sidebar-bottom"><div class="storage-label">Penyimpanan lokal</div><div class="storage-hint">Data tersimpan di browser perangkat ini, bukan database bersama.</div><button id="backupNow" class="sidebar-backup">⬇ Unduh cadangan</button></div>
-    </aside>
-    <div class="main-column">
-      <header class="topbar"><button id="menuToggle" class="icon-btn mobile" aria-label="Buka menu">☰</button><div class="crumb">DEPARTEMEN MESIN <span>/</span> <strong id="headerTitle">Dashboard</strong></div><div class="header-right"><span class="clock" id="clock"></span><span class="avatar">KM</span></div></header>
-      <main id="main" class="content"></main>
-      <footer class="footer">PMS KM. M.H. Thamrin · Versi demo mandiri · Bukan sistem resmi keselamatan kapal</footer>
-    </div>
-  </div>
-  <div id="toast" role="status" aria-live="polite"></div>
-  <dialog id="modal"><form method="dialog" id="modalForm"><div id="modalInner"></div></form></dialog>
-  <script src="data.js"></script><script src="app.js"></script>
+<div id="app" aria-live="polite"><div class="startup">Menyiapkan aplikasi PMS…</div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<dialog id="modal"><form id="modalForm" method="dialog"><div id="modalInner"></div></form></dialog>
+<script src="config.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
